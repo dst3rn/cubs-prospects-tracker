@@ -1,0 +1,13 @@
+{
+  "name": "cubs-prospects-tracker",
+  "version": "1.0.0",
+  "description": "Chicago Cubs Top 30 Prospects Tracker",
+  "scripts": {
+    "install:all": "cd server && npm install && cd ../client && npm install",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build": "cd client && npm install && npm run build && cd ../server && npm install",
+    "start": "cd server && node src/app.js",
+    "migrate": "cd server && npm run migrate"
+  }
+}

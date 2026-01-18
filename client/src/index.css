@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-gray-100 min-h-screen;
+}
+
+.trend-hot {
+  @apply text-red-500;
+}
+
+.trend-cold {
+  @apply text-blue-400;
+}
+
+.trend-neutral {
+  @apply text-gray-500;
+}
+
+.stat-positive {
+  @apply text-green-600;
+}
+
+.stat-negative {
+  @apply text-red-600;
+}
