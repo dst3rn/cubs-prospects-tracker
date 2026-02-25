@@ -2,6 +2,14 @@ const axios = require('axios');
 
 const MLB_API_BASE = 'https://statsapi.mlb.com/api/v1';
 
+/**
+ * Returns 'S' during spring training (Feb-Mar) and 'R' for regular season
+ */
+function getCurrentGameType() {
+  const month = new Date().getMonth(); // 0-indexed: 1=Feb, 2=Mar
+  return (month === 1 || month === 2) ? 'S' : 'R';
+}
+
 // Minor league level IDs
 const LEVEL_IDS = {
   'Triple-A': 11,
@@ -59,7 +67,7 @@ const mlbApi = {
           stats: 'season',
           group: 'hitting,pitching',
           season: season,
-          gameType: 'R',
+          gameType: getCurrentGameType(),
           sportIds: '1,11,12,13,14,15,16,17,21,22,23' // All professional levels
         }
       });
@@ -80,7 +88,7 @@ const mlbApi = {
         params: {
           stats: 'career',
           group: 'hitting,pitching',
-          gameType: 'R',
+          gameType: getCurrentGameType(),
           sportIds: '1,11,12,13,14,15,16,17,21,22,23' // All professional levels including minors
         }
       });
@@ -100,7 +108,7 @@ const mlbApi = {
         params: {
           stats: 'yearByYear',
           group: 'hitting,pitching',
-          gameType: 'R',
+          gameType: getCurrentGameType(),
           sportIds: '1,11,12,13,14,15,16,17,21,22,23' // All professional levels
         }
       });
@@ -124,7 +132,7 @@ const mlbApi = {
         const params = {
           stats: statType,
           group: 'hitting,pitching',
-          gameType: 'R',
+          gameType: getCurrentGameType(),
           sportId: sportId,
           ...extraParams
         };
@@ -212,7 +220,7 @@ const mlbApi = {
           stats: 'gameLog',
           group: 'hitting,pitching',
           season: season,
-          gameType: 'R',
+          gameType: getCurrentGameType(),
           sportIds: '1,11,12,13,14,15,16,17,21,22,23'
         }
       });
@@ -234,7 +242,7 @@ const mlbApi = {
           group: 'hitting,pitching',
           startDate: startDate,
           endDate: endDate,
-          gameType: 'R',
+          gameType: getCurrentGameType(),
           sportIds: '1,11,12,13,14,15,16,17,21,22,23'
         }
       });
