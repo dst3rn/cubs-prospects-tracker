@@ -55,12 +55,12 @@ export default function RollingStats({ seasonStats, rolling7, rolling14, rolling
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Performance</h3>
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-wrap">
           {periods.map((period) => (
             <button
               key={period.key}
               onClick={() => setSelectedPeriod(period.key)}
-              className={`px-3 py-1 text-sm rounded-full transition-colors ${
+              className={`px-4 py-2 text-sm rounded-full transition-colors ${
                 selectedPeriod === period.key
                   ? 'bg-cubs-blue text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'

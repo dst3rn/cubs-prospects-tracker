@@ -56,7 +56,7 @@ export default function ProspectDetail() {
   return (
     <div className="space-y-6">
       {/* Back link */}
-      <Link to="/" className="text-cubs-blue hover:underline text-sm flex items-center gap-1">
+      <Link to="/" className="text-cubs-blue hover:underline text-sm flex items-center gap-1 py-2">
         <span>←</span> Back to Dashboard
       </Link>
 
@@ -121,7 +121,7 @@ export default function ProspectDetail() {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Career Stats</h3>
           {prospect.isPitcher ? (
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-4 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 text-center">
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-xs text-gray-500 uppercase">Games</p>
                 <p className="text-xl font-bold">{prospect.careerStats.games || 0}</p>
@@ -148,7 +148,7 @@ export default function ProspectDetail() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-4 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 text-center">
               <div className="bg-gray-50 rounded-lg p-3">
                 <p className="text-xs text-gray-500 uppercase">Games</p>
                 <p className="text-xl font-bold">{prospect.careerStats.games || 0}</p>
@@ -187,7 +187,7 @@ export default function ProspectDetail() {
               <button
                 key={period.key}
                 onClick={() => setSelectedPeriod(period.key)}
-                className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                className={`px-4 py-2 text-sm rounded-full transition-colors ${
                   selectedPeriod === period.key
                     ? 'bg-cubs-blue text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -236,7 +236,38 @@ export default function ProspectDetail() {
       {prospect.yearByYear && prospect.yearByYear.length > 0 && (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Year-by-Year Stats</h3>
-          <div className="overflow-x-auto">
+
+          {/* Mobile stacked cards */}
+          <div className="md:hidden space-y-3">
+            {prospect.yearByYear.map((year, index) => (
+              <div key={index} className="bg-gray-50 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-sm">{year.season}</span>
+                  <span className="text-xs text-gray-500">{year.team} ({year.level})</span>
+                </div>
+                <div className="grid grid-cols-4 gap-2 text-center text-sm">
+                  {prospect.isPitcher ? (
+                    <>
+                      <div><p className="text-[10px] text-gray-400">ERA</p><p className="font-semibold font-mono">{formatStat(year.stats?.era, 2)}</p></div>
+                      <div><p className="text-[10px] text-gray-400">W-L</p><p className="font-semibold">{year.stats?.wins || 0}-{year.stats?.losses || 0}</p></div>
+                      <div><p className="text-[10px] text-gray-400">K</p><p className="font-semibold">{year.stats?.strikeoutsPitching || 0}</p></div>
+                      <div><p className="text-[10px] text-gray-400">WHIP</p><p className="font-semibold font-mono">{formatStat(year.stats?.whip, 2)}</p></div>
+                    </>
+                  ) : (
+                    <>
+                      <div><p className="text-[10px] text-gray-400">AVG</p><p className="font-semibold font-mono">{formatStat(year.stats?.avg)}</p></div>
+                      <div><p className="text-[10px] text-gray-400">OPS</p><p className="font-semibold font-mono">{formatStat(year.stats?.ops || (parseFloat(year.stats?.obp || 0) + parseFloat(year.stats?.slg || 0)))}</p></div>
+                      <div><p className="text-[10px] text-gray-400">HR</p><p className="font-semibold">{year.stats?.homeRuns || 0}</p></div>
+                      <div><p className="text-[10px] text-gray-400">RBI</p><p className="font-semibold">{year.stats?.rbis || 0}</p></div>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>

@@ -2,6 +2,59 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import TrendIndicator from './TrendIndicator'
 
+function MobileProspectRow({ prospect, isPitcher, formatStat }) {
+  return (
+    <Link
+      to={`/prospect/${prospect.id}`}
+      className="flex items-center gap-3 bg-white p-3 rounded-lg shadow-sm active:bg-gray-50"
+    >
+      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-cubs-blue text-white text-xs font-bold flex-shrink-0">
+        {prospect.pipeline_rank}
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="font-medium text-gray-900 truncate">{prospect.name}</p>
+          <TrendIndicator trend={prospect.trend} />
+        </div>
+        <p className="text-xs text-gray-500">{prospect.position} • {prospect.current_team}</p>
+      </div>
+      <div className="flex gap-3 text-right flex-shrink-0">
+        {isPitcher ? (
+          <>
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase">ERA</p>
+              <p className="text-sm font-semibold font-mono">{formatStat(prospect.seasonStats?.era, 2)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase">K</p>
+              <p className="text-sm font-semibold">{prospect.seasonStats?.strikeoutsPitching || '-'}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase">WHIP</p>
+              <p className="text-sm font-semibold font-mono">{formatStat(prospect.seasonStats?.whip, 2)}</p>
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase">AVG</p>
+              <p className="text-sm font-semibold font-mono">{formatStat(prospect.seasonStats?.avg)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase">OPS</p>
+              <p className="text-sm font-semibold font-mono">{formatStat(prospect.seasonStats?.ops)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase">HR</p>
+              <p className="text-sm font-semibold">{prospect.seasonStats?.homeRuns || '-'}</p>
+            </div>
+          </>
+        )}
+      </div>
+    </Link>
+  )
+}
+
 export default function StatsTable({ prospects, onSort }) {
   const [sortColumn, setSortColumn] = useState('pipeline_rank')
   const [sortDirection, setSortDirection] = useState('asc')
@@ -21,7 +74,7 @@ export default function StatsTable({ prospects, onSort }) {
       <div className="flex items-center gap-1">
         {children}
         {sortColumn === column && (
-          <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+          <span>{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
         )}
       </div>
     </th>
@@ -38,10 +91,22 @@ export default function StatsTable({ prospects, onSort }) {
 
   return (
     <div className="space-y-8">
-      {/* Hitters Table */}
+      {/* Hitters */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-3">Position Players</h3>
-        <div className="bg-white rounded-lg shadow overflow-x-auto">
+
+        {/* Mobile compact list */}
+        <div className="md:hidden space-y-2">
+          {hitters.map((prospect) => (
+            <MobileProspectRow key={prospect.id} prospect={prospect} isPitcher={false} formatStat={formatStat} />
+          ))}
+          {hitters.length === 0 && (
+            <p className="text-center text-gray-500 py-8">No position players found</p>
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block bg-white rounded-lg shadow overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -96,10 +161,22 @@ export default function StatsTable({ prospects, onSort }) {
         </div>
       </div>
 
-      {/* Pitchers Table */}
+      {/* Pitchers */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-3">Pitchers</h3>
-        <div className="bg-white rounded-lg shadow overflow-x-auto">
+
+        {/* Mobile compact list */}
+        <div className="md:hidden space-y-2">
+          {pitchers.map((prospect) => (
+            <MobileProspectRow key={prospect.id} prospect={prospect} isPitcher={true} formatStat={formatStat} />
+          ))}
+          {pitchers.length === 0 && (
+            <p className="text-center text-gray-500 py-8">No pitchers found</p>
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block bg-white rounded-lg shadow overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
