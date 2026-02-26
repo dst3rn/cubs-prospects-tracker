@@ -2,7 +2,18 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import TrendIndicator from './TrendIndicator'
 
-function MobileProspectRow({ prospect, isPitcher, formatStat }) {
+function getStatsForPeriod(prospect, timePeriod) {
+  switch (timePeriod) {
+    case '7': return prospect.rolling7
+    case '14': return prospect.rolling14
+    case '28': return prospect.rolling28
+    default: return prospect.seasonStats
+  }
+}
+
+function MobileProspectRow({ prospect, isPitcher, formatStat, timePeriod }) {
+  const stats = getStatsForPeriod(prospect, timePeriod)
+
   return (
     <Link
       to={`/prospect/${prospect.id}`}
@@ -23,30 +34,30 @@ function MobileProspectRow({ prospect, isPitcher, formatStat }) {
           <>
             <div>
               <p className="text-[10px] text-gray-400 uppercase">ERA</p>
-              <p className="text-sm font-semibold font-mono">{formatStat(prospect.seasonStats?.era, 2)}</p>
+              <p className="text-sm font-semibold font-mono">{formatStat(stats?.era, 2)}</p>
             </div>
             <div>
               <p className="text-[10px] text-gray-400 uppercase">K</p>
-              <p className="text-sm font-semibold">{prospect.seasonStats?.strikeoutsPitching || '-'}</p>
+              <p className="text-sm font-semibold">{stats?.strikeoutsPitching || '-'}</p>
             </div>
             <div>
               <p className="text-[10px] text-gray-400 uppercase">WHIP</p>
-              <p className="text-sm font-semibold font-mono">{formatStat(prospect.seasonStats?.whip, 2)}</p>
+              <p className="text-sm font-semibold font-mono">{formatStat(stats?.whip, 2)}</p>
             </div>
           </>
         ) : (
           <>
             <div>
               <p className="text-[10px] text-gray-400 uppercase">AVG</p>
-              <p className="text-sm font-semibold font-mono">{formatStat(prospect.seasonStats?.avg)}</p>
+              <p className="text-sm font-semibold font-mono">{formatStat(stats?.avg)}</p>
             </div>
             <div>
               <p className="text-[10px] text-gray-400 uppercase">OPS</p>
-              <p className="text-sm font-semibold font-mono">{formatStat(prospect.seasonStats?.ops)}</p>
+              <p className="text-sm font-semibold font-mono">{formatStat(stats?.ops)}</p>
             </div>
             <div>
               <p className="text-[10px] text-gray-400 uppercase">HR</p>
-              <p className="text-sm font-semibold">{prospect.seasonStats?.homeRuns || '-'}</p>
+              <p className="text-sm font-semibold">{stats?.homeRuns || '-'}</p>
             </div>
           </>
         )}
@@ -55,7 +66,7 @@ function MobileProspectRow({ prospect, isPitcher, formatStat }) {
   )
 }
 
-export default function StatsTable({ prospects, onSort }) {
+export default function StatsTable({ prospects, onSort, timePeriod = 'season' }) {
   const [sortColumn, setSortColumn] = useState('pipeline_rank')
   const [sortDirection, setSortDirection] = useState('asc')
 
@@ -98,7 +109,7 @@ export default function StatsTable({ prospects, onSort }) {
         {/* Mobile compact list */}
         <div className="md:hidden space-y-2">
           {hitters.map((prospect) => (
-            <MobileProspectRow key={prospect.id} prospect={prospect} isPitcher={false} formatStat={formatStat} />
+            <MobileProspectRow key={prospect.id} prospect={prospect} isPitcher={false} formatStat={formatStat} timePeriod={timePeriod} />
           ))}
           {hitters.length === 0 && (
             <p className="text-center text-gray-500 py-8">No position players found</p>
@@ -126,31 +137,34 @@ export default function StatsTable({ prospects, onSort }) {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {hitters.map((prospect) => (
-                <tr key={prospect.id} className="hover:bg-gray-50">
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-cubs-blue text-white text-xs font-bold">
-                      {prospect.pipeline_rank}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    <Link to={`/prospect/${prospect.id}`} className="text-cubs-blue hover:underline font-medium">
-                      {prospect.name}
-                    </Link>
-                  </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{prospect.position}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{prospect.current_team}</td>
-                  <td className="px-3 py-2 whitespace-nowrap"><TrendIndicator trend={prospect.trend} /></td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{prospect.seasonStats?.games || '-'}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-right font-mono">{formatStat(prospect.seasonStats?.avg)}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-right font-mono">{formatStat(prospect.seasonStats?.obp)}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-right font-mono">{formatStat(prospect.seasonStats?.slg)}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-right font-mono font-semibold">{formatStat(prospect.seasonStats?.ops)}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{prospect.seasonStats?.homeRuns || '-'}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{prospect.seasonStats?.rbis || '-'}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{prospect.seasonStats?.stolenBases || '-'}</td>
-                </tr>
-              ))}
+              {hitters.map((prospect) => {
+                const stats = getStatsForPeriod(prospect, timePeriod)
+                return (
+                  <tr key={prospect.id} className="hover:bg-gray-50">
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-cubs-blue text-white text-xs font-bold">
+                        {prospect.pipeline_rank}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <Link to={`/prospect/${prospect.id}`} className="text-cubs-blue hover:underline font-medium">
+                        {prospect.name}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{prospect.position}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{prospect.current_team}</td>
+                    <td className="px-3 py-2 whitespace-nowrap"><TrendIndicator trend={prospect.trend} /></td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{stats?.games || '-'}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-right font-mono">{formatStat(stats?.avg)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-right font-mono">{formatStat(stats?.obp)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-right font-mono">{formatStat(stats?.slg)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-right font-mono font-semibold">{formatStat(stats?.ops)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{stats?.homeRuns || '-'}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{stats?.rbis || '-'}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{stats?.stolenBases || '-'}</td>
+                  </tr>
+                )
+              })}
               {hitters.length === 0 && (
                 <tr>
                   <td colSpan={13} className="px-3 py-8 text-center text-gray-500">No position players found</td>
@@ -168,7 +182,7 @@ export default function StatsTable({ prospects, onSort }) {
         {/* Mobile compact list */}
         <div className="md:hidden space-y-2">
           {pitchers.map((prospect) => (
-            <MobileProspectRow key={prospect.id} prospect={prospect} isPitcher={true} formatStat={formatStat} />
+            <MobileProspectRow key={prospect.id} prospect={prospect} isPitcher={true} formatStat={formatStat} timePeriod={timePeriod} />
           ))}
           {pitchers.length === 0 && (
             <p className="text-center text-gray-500 py-8">No pitchers found</p>
@@ -196,31 +210,34 @@ export default function StatsTable({ prospects, onSort }) {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {pitchers.map((prospect) => (
-                <tr key={prospect.id} className="hover:bg-gray-50">
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-cubs-blue text-white text-xs font-bold">
-                      {prospect.pipeline_rank}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    <Link to={`/prospect/${prospect.id}`} className="text-cubs-blue hover:underline font-medium">
-                      {prospect.name}
-                    </Link>
-                  </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{prospect.position}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{prospect.current_team}</td>
-                  <td className="px-3 py-2 whitespace-nowrap"><TrendIndicator trend={prospect.trend} /></td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{prospect.seasonStats?.wins || '-'}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{prospect.seasonStats?.losses || '-'}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-right font-mono font-semibold">{formatStat(prospect.seasonStats?.era, 2)}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-right font-mono">{formatStat(prospect.seasonStats?.whip, 2)}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{prospect.seasonStats?.inningsPitched || '-'}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{prospect.seasonStats?.strikeoutsPitching || '-'}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{prospect.seasonStats?.walksAllowed || '-'}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{prospect.seasonStats?.saves || '-'}</td>
-                </tr>
-              ))}
+              {pitchers.map((prospect) => {
+                const stats = getStatsForPeriod(prospect, timePeriod)
+                return (
+                  <tr key={prospect.id} className="hover:bg-gray-50">
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-cubs-blue text-white text-xs font-bold">
+                        {prospect.pipeline_rank}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <Link to={`/prospect/${prospect.id}`} className="text-cubs-blue hover:underline font-medium">
+                        {prospect.name}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{prospect.position}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{prospect.current_team}</td>
+                    <td className="px-3 py-2 whitespace-nowrap"><TrendIndicator trend={prospect.trend} /></td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{stats?.wins || '-'}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{stats?.losses || '-'}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-right font-mono font-semibold">{formatStat(stats?.era, 2)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-right font-mono">{formatStat(stats?.whip, 2)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{stats?.inningsPitched || '-'}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{stats?.strikeoutsPitching || '-'}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{stats?.walksAllowed || '-'}</td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-right">{stats?.saves || '-'}</td>
+                  </tr>
+                )
+              })}
               {pitchers.length === 0 && (
                 <tr>
                   <td colSpan={13} className="px-3 py-8 text-center text-gray-500">No pitchers found</td>

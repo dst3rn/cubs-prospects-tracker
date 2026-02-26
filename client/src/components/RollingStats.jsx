@@ -1,11 +1,11 @@
 import { useState } from 'react'
 
-export default function RollingStats({ seasonStats, rolling7, rolling14, rolling30, isPitcher }) {
+export default function RollingStats({ seasonStats, rolling7, rolling14, rolling28, isPitcher }) {
   const [selectedPeriod, setSelectedPeriod] = useState('season')
 
   const periods = [
     { key: 'season', label: 'Season', data: seasonStats },
-    { key: '30', label: '30 Days', data: rolling30 },
+    { key: '28', label: '28 Days', data: rolling28 },
     { key: '14', label: '14 Days', data: rolling14 },
     { key: '7', label: '7 Days', data: rolling7 }
   ]

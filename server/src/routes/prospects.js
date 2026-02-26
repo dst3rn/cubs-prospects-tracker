@@ -43,11 +43,11 @@ router.get('/', async (req, res) => {
       prospects.map(async (prospect) => {
         const isPitcher = ['P', 'SP', 'RP', 'LHP', 'RHP'].includes(prospect.position);
 
-        const [seasonStats, rolling7, rolling14, rolling30, trend] = await Promise.all([
+        const [seasonStats, rolling7, rolling14, rolling28, trend] = await Promise.all([
           statsCalculator.getSeasonTotals(prospect.mlb_player_id),
           statsCalculator.calculateRollingStats(prospect.mlb_player_id, 7),
           statsCalculator.calculateRollingStats(prospect.mlb_player_id, 14),
-          statsCalculator.calculateRollingStats(prospect.mlb_player_id, 30),
+          statsCalculator.calculateRollingStats(prospect.mlb_player_id, 28),
           statsCalculator.getTrendIndicator(prospect.mlb_player_id, isPitcher)
         ]);
 
@@ -57,7 +57,7 @@ router.get('/', async (req, res) => {
           seasonStats,
           rolling7,
           rolling14,
-          rolling30,
+          rolling28,
           trend
         };
       })
@@ -222,7 +222,7 @@ router.get('/:id', async (req, res) => {
     const seasonStats = detailStats ? aggregateStats(detailStats.season, isPitcher) : null;
     const last7Days = detailStats ? aggregateStats(detailStats.last7Days, isPitcher) : null;
     const last14Days = detailStats ? aggregateStats(detailStats.last14Days, isPitcher) : null;
-    const last30Days = detailStats ? aggregateStats(detailStats.last30Days, isPitcher) : null;
+    const last28Days = detailStats ? aggregateStats(detailStats.last28Days, isPitcher) : null;
     const yearByYear = detailStats ? parseYearByYear(detailStats.yearByYear, isPitcher) : [];
 
     // Determine trend based on last 7 days vs season
@@ -244,7 +244,7 @@ router.get('/:id', async (req, res) => {
       seasonStats,
       rolling7: last7Days,
       rolling14: last14Days,
-      rolling30: last30Days,
+      rolling28: last28Days,
       yearByYear,
       trend,
       playerInfo: mlbPlayerInfo ? {

@@ -46,7 +46,7 @@ export default function ProspectDetail() {
 
   const periods = [
     { key: 'season', label: 'Season', data: prospect.seasonStats },
-    { key: '30', label: 'Last 30 Days', data: prospect.rolling30 },
+    { key: '28', label: 'Last 28 Days', data: prospect.rolling28 },
     { key: '14', label: 'Last 14 Days', data: prospect.rolling14 },
     { key: '7', label: 'Last 7 Days', data: prospect.rolling7 }
   ]

@@ -166,12 +166,12 @@ const mlbApi = {
     const days14Ago = new Date(today);
     days14Ago.setDate(days14Ago.getDate() - 14);
 
-    const days30Ago = new Date(today);
-    days30Ago.setDate(days30Ago.getDate() - 30);
+    const days28Ago = new Date(today);
+    days28Ago.setDate(days28Ago.getDate() - 28);
 
     try {
       // Fetch career and year-by-year stats from all levels
-      const [careerStats, seasonStats, last7, last14, last30] = await Promise.all([
+      const [careerStats, seasonStats, last7, last14, last28] = await Promise.all([
         this.getStatsAllLevels(playerId, 'career'),
         this.getStatsAllLevels(playerId, 'season', currentYear),
         this.getStatsAllLevels(playerId, 'byDateRange', null, {
@@ -183,7 +183,7 @@ const mlbApi = {
           endDate: formatDate(today)
         }),
         this.getStatsAllLevels(playerId, 'byDateRange', null, {
-          startDate: formatDate(days30Ago),
+          startDate: formatDate(days28Ago),
           endDate: formatDate(today)
         })
       ]);
@@ -202,7 +202,7 @@ const mlbApi = {
         season: seasonStats,
         last7Days: last7,
         last14Days: last14,
-        last30Days: last30
+        last28Days: last28
       };
     } catch (err) {
       console.error('Error fetching player detail stats:', err.message);
