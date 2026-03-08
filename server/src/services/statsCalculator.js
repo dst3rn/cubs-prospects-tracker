@@ -1,75 +1,94 @@
 const db = require('../db');
 
+// Returns 'S' during spring training (Feb-Mar) and 'R' for regular season
+function getCurrentGameType() {
+  const month = new Date().getMonth(); // 0-indexed: 1=Feb, 2=Mar
+  return (month === 1 || month === 2) ? 'S' : 'R';
+}
+
 const statsCalculator = {
   /**
-   * Calculate rolling stats for a player over N days
+   * Calculate rolling stats for a player over N days.
+   * Since daily_stats stores cumulative season totals, we compute the delta
+   * between the most recent record and the baseline record before the window.
    */
   async calculateRollingStats(playerId, days) {
-    const query = `
-      SELECT
-        SUM(games) as games,
-        SUM(at_bats) as at_bats,
-        SUM(hits) as hits,
-        SUM(doubles) as doubles,
-        SUM(triples) as triples,
-        SUM(home_runs) as home_runs,
-        SUM(rbis) as rbis,
-        SUM(walks) as walks,
-        SUM(strikeouts) as strikeouts,
-        SUM(stolen_bases) as stolen_bases,
-        SUM(innings_pitched) as innings_pitched,
-        SUM(earned_runs) as earned_runs,
-        SUM(hits_allowed) as hits_allowed,
-        SUM(walks_allowed) as walks_allowed,
-        SUM(strikeouts_pitching) as strikeouts_pitching,
-        SUM(wins) as wins,
-        SUM(losses) as losses,
-        SUM(saves) as saves
-      FROM daily_stats
+    const gameType = getCurrentGameType();
+
+    // Most recent cumulative record for this game type
+    const currentQuery = `
+      SELECT * FROM daily_stats
       WHERE mlb_player_id = $1
-        AND stat_date >= CURRENT_DATE - $2::INTEGER
+        AND game_type = $2
+      ORDER BY stat_date DESC
+      LIMIT 1
     `;
 
-    const result = await db.query(query, [playerId, days]);
-    const stats = result.rows[0];
+    // Most recent record from before the N-day window (used as the baseline)
+    const baselineQuery = `
+      SELECT * FROM daily_stats
+      WHERE mlb_player_id = $1
+        AND stat_date < CURRENT_DATE - $2::INTEGER
+        AND game_type = $3
+      ORDER BY stat_date DESC
+      LIMIT 1
+    `;
 
-    if (!stats || !stats.games) {
+    const [currentResult, baselineResult] = await Promise.all([
+      db.query(currentQuery, [playerId, gameType]),
+      db.query(baselineQuery, [playerId, days, gameType])
+    ]);
+
+    const current = currentResult.rows[0];
+    if (!current || !current.games) {
       return null;
     }
 
-    return this.calculateDerivedStats(stats);
+    const baseline = baselineResult.rows[0];
+
+    const delta = {
+      games: current.games - (baseline?.games || 0),
+      at_bats: current.at_bats - (baseline?.at_bats || 0),
+      hits: current.hits - (baseline?.hits || 0),
+      doubles: current.doubles - (baseline?.doubles || 0),
+      triples: current.triples - (baseline?.triples || 0),
+      home_runs: current.home_runs - (baseline?.home_runs || 0),
+      rbis: current.rbis - (baseline?.rbis || 0),
+      walks: current.walks - (baseline?.walks || 0),
+      strikeouts: current.strikeouts - (baseline?.strikeouts || 0),
+      stolen_bases: current.stolen_bases - (baseline?.stolen_bases || 0),
+      innings_pitched: parseFloat(current.innings_pitched || 0) - parseFloat(baseline?.innings_pitched || 0),
+      earned_runs: (current.earned_runs || 0) - (baseline?.earned_runs || 0),
+      hits_allowed: (current.hits_allowed || 0) - (baseline?.hits_allowed || 0),
+      walks_allowed: (current.walks_allowed || 0) - (baseline?.walks_allowed || 0),
+      strikeouts_pitching: (current.strikeouts_pitching || 0) - (baseline?.strikeouts_pitching || 0),
+      wins: current.wins - (baseline?.wins || 0),
+      losses: current.losses - (baseline?.losses || 0),
+      saves: current.saves - (baseline?.saves || 0)
+    };
+
+    if (delta.games <= 0) return null;
+
+    return this.calculateDerivedStats(delta);
   },
 
   /**
-   * Calculate season totals for a player
+   * Get season totals for a player.
+   * Returns the most recent cumulative record for the current year and game type.
    */
   async getSeasonTotals(playerId) {
+    const gameType = getCurrentGameType();
+
     const query = `
-      SELECT
-        SUM(games) as games,
-        SUM(at_bats) as at_bats,
-        SUM(hits) as hits,
-        SUM(doubles) as doubles,
-        SUM(triples) as triples,
-        SUM(home_runs) as home_runs,
-        SUM(rbis) as rbis,
-        SUM(walks) as walks,
-        SUM(strikeouts) as strikeouts,
-        SUM(stolen_bases) as stolen_bases,
-        SUM(innings_pitched) as innings_pitched,
-        SUM(earned_runs) as earned_runs,
-        SUM(hits_allowed) as hits_allowed,
-        SUM(walks_allowed) as walks_allowed,
-        SUM(strikeouts_pitching) as strikeouts_pitching,
-        SUM(wins) as wins,
-        SUM(losses) as losses,
-        SUM(saves) as saves
-      FROM daily_stats
+      SELECT * FROM daily_stats
       WHERE mlb_player_id = $1
         AND EXTRACT(YEAR FROM stat_date) = EXTRACT(YEAR FROM CURRENT_DATE)
+        AND game_type = $2
+      ORDER BY stat_date DESC
+      LIMIT 1
     `;
 
-    const result = await db.query(query, [playerId]);
+    const result = await db.query(query, [playerId, gameType]);
     const stats = result.rows[0];
 
     if (!stats || !stats.games) {
@@ -169,16 +188,18 @@ const statsCalculator = {
   /**
    * Store daily stats for a player
    */
-  async storeDailyStats(playerId, stats, date = new Date()) {
+  async storeDailyStats(playerId, stats, date = new Date(), gameType = null) {
+    const gType = gameType || getCurrentGameType();
     const query = `
       INSERT INTO daily_stats (
-        mlb_player_id, stat_date, games, at_bats, hits, doubles, triples,
+        mlb_player_id, stat_date, game_type, games, at_bats, hits, doubles, triples,
         home_runs, rbis, walks, strikeouts, stolen_bases, avg, obp, slg, ops,
         innings_pitched, earned_runs, hits_allowed, walks_allowed,
         strikeouts_pitching, era, whip, wins, losses, saves
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
       ON CONFLICT (mlb_player_id, stat_date)
       DO UPDATE SET
+        game_type = EXCLUDED.game_type,
         games = EXCLUDED.games,
         at_bats = EXCLUDED.at_bats,
         hits = EXCLUDED.hits,
@@ -209,6 +230,7 @@ const statsCalculator = {
     await db.query(query, [
       playerId,
       dateStr,
+      gType,
       stats.games || 0,
       stats.atBats || 0,
       stats.hits || 0,

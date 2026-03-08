@@ -2,6 +2,11 @@ const db = require('../db');
 const mlbApi = require('../services/mlbApi');
 const statsCalculator = require('../services/statsCalculator');
 
+function getCurrentGameType() {
+  const month = new Date().getMonth(); // 0-indexed: 1=Feb, 2=Mar
+  return (month === 1 || month === 2) ? 'S' : 'R';
+}
+
 /**
  * Daily stats refresh job
  * Fetches current season stats for all active prospects
@@ -21,6 +26,7 @@ async function runDailyStatsJob() {
 
     let successCount = 0;
     let errorCount = 0;
+    const gameType = getCurrentGameType();
 
     for (const prospect of prospects) {
       try {
@@ -43,10 +49,12 @@ async function runDailyStatsJob() {
               }
 
               if (parsedStats) {
-                // Store as today's cumulative stats
+                // Store as today's cumulative stats with current game type
                 await statsCalculator.storeDailyStats(
                   prospect.mlb_player_id,
-                  parsedStats
+                  parsedStats,
+                  new Date(),
+                  gameType
                 );
               }
             }
