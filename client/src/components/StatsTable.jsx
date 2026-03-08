@@ -12,7 +12,6 @@ function TrendTooltip({ isPitcher }) {
             <p className="font-semibold mb-1">Pitchers (ERA-based)</p>
             <p>🔥 Hot: last-7-day ERA &lt; 75% of season ERA</p>
             <p>❄️ Cold: last-7-day ERA &gt; 125% of season ERA</p>
-            <p>➡️ Neutral: otherwise or insufficient data</p>
             <hr className="border-gray-600 my-2" />
             <p className="font-semibold mb-1">Hitters (OPS-based)</p>
             <p>🔥 Hot: last-7-day OPS &gt; 115% of season OPS</p>
@@ -23,7 +22,6 @@ function TrendTooltip({ isPitcher }) {
             <p className="font-semibold mb-1">Hitters (OPS-based)</p>
             <p>🔥 Hot: last-7-day OPS &gt; 115% of season OPS</p>
             <p>❄️ Cold: last-7-day OPS &lt; 85% of season OPS</p>
-            <p>➡️ Neutral: otherwise or insufficient data</p>
             <hr className="border-gray-600 my-2" />
             <p className="font-semibold mb-1">Pitchers (ERA-based)</p>
             <p>🔥 Hot: last-7-day ERA &lt; 75% of season ERA</p>
