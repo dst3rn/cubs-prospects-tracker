@@ -2,6 +2,39 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import TrendIndicator from './TrendIndicator'
 
+function TrendTooltip({ isPitcher }) {
+  return (
+    <div className="relative inline-block group">
+      <span className="cursor-help border-b border-dashed border-gray-400">Trend</span>
+      <div className="absolute left-0 top-full mt-1 z-50 hidden group-hover:block w-64 bg-gray-900 text-white text-xs rounded-lg shadow-lg p-3 normal-case font-normal tracking-normal">
+        {isPitcher ? (
+          <>
+            <p className="font-semibold mb-1">Pitchers (ERA-based)</p>
+            <p>🔥 Hot: last-7-day ERA &lt; 75% of season ERA</p>
+            <p>❄️ Cold: last-7-day ERA &gt; 125% of season ERA</p>
+            <p>➡️ Neutral: otherwise or insufficient data</p>
+            <hr className="border-gray-600 my-2" />
+            <p className="font-semibold mb-1">Hitters (OPS-based)</p>
+            <p>🔥 Hot: last-7-day OPS &gt; 115% of season OPS</p>
+            <p>❄️ Cold: last-7-day OPS &lt; 85% of season OPS</p>
+          </>
+        ) : (
+          <>
+            <p className="font-semibold mb-1">Hitters (OPS-based)</p>
+            <p>🔥 Hot: last-7-day OPS &gt; 115% of season OPS</p>
+            <p>❄️ Cold: last-7-day OPS &lt; 85% of season OPS</p>
+            <p>➡️ Neutral: otherwise or insufficient data</p>
+            <hr className="border-gray-600 my-2" />
+            <p className="font-semibold mb-1">Pitchers (ERA-based)</p>
+            <p>🔥 Hot: last-7-day ERA &lt; 75% of season ERA</p>
+            <p>❄️ Cold: last-7-day ERA &gt; 125% of season ERA</p>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function getStatsForPeriod(prospect, timePeriod) {
   switch (timePeriod) {
     case '7': return prospect.rolling7
@@ -126,7 +159,7 @@ export default function StatsTable({ prospects, onSort, timePeriod = 'season' })
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pos</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Team</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                  <span title="🔥 Hot: last-7-day OPS > 115% of season OPS&#10;❄️ Cold: last-7-day OPS < 85% of season OPS&#10;➡️ Neutral: otherwise or insufficient data&#10;&#10;Pitchers: based on ERA (lower is better)&#10;🔥 Hot: last-7-day ERA < 75% of season ERA&#10;❄️ Cold: last-7-day ERA > 125% of season ERA" className="cursor-help border-b border-dashed border-gray-400">Trend</span>
+                  <TrendTooltip isPitcher={false} />
                 </th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">G</th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">AVG</th>
@@ -201,7 +234,7 @@ export default function StatsTable({ prospects, onSort, timePeriod = 'season' })
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pos</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Team</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                  <span title="🔥 Hot: last-7-day ERA < 75% of season ERA&#10;❄️ Cold: last-7-day ERA > 125% of season ERA&#10;➡️ Neutral: otherwise or insufficient data&#10;&#10;Hitters: based on OPS (higher is better)&#10;🔥 Hot: last-7-day OPS > 115% of season OPS&#10;❄️ Cold: last-7-day OPS < 85% of season OPS" className="cursor-help border-b border-dashed border-gray-400">Trend</span>
+                  <TrendTooltip isPitcher={true} />
                 </th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">W</th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">L</th>
