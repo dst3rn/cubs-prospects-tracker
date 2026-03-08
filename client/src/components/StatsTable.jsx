@@ -125,7 +125,9 @@ export default function StatsTable({ prospects, onSort, timePeriod = 'season' })
                 <SortHeader column="name">Name</SortHeader>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pos</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Team</th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Trend</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  <span title="🔥 Hot: last-7-day OPS > 115% of season OPS&#10;❄️ Cold: last-7-day OPS < 85% of season OPS&#10;➡️ Neutral: otherwise or insufficient data&#10;&#10;Pitchers: based on ERA (lower is better)&#10;🔥 Hot: last-7-day ERA < 75% of season ERA&#10;❄️ Cold: last-7-day ERA > 125% of season ERA" className="cursor-help border-b border-dashed border-gray-400">Trend</span>
+                </th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">G</th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">AVG</th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">OBP</th>
@@ -198,7 +200,9 @@ export default function StatsTable({ prospects, onSort, timePeriod = 'season' })
                 <SortHeader column="name">Name</SortHeader>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pos</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Team</th>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Trend</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  <span title="🔥 Hot: last-7-day ERA < 75% of season ERA&#10;❄️ Cold: last-7-day ERA > 125% of season ERA&#10;➡️ Neutral: otherwise or insufficient data&#10;&#10;Hitters: based on OPS (higher is better)&#10;🔥 Hot: last-7-day OPS > 115% of season OPS&#10;❄️ Cold: last-7-day OPS < 85% of season OPS" className="cursor-help border-b border-dashed border-gray-400">Trend</span>
+                </th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">W</th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">L</th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">ERA</th>
