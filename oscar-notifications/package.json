@@ -1,0 +1,14 @@
+{
+  "name": "oscar-winner-notifications",
+  "version": "1.0.0",
+  "description": "Monitor @TheAcademy on Twitter/X for Oscar winner announcements and send notifications",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "twitter-api-v2": "^1.15.0"
+  }
+}
