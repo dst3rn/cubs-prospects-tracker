@@ -48,6 +48,12 @@ export async function fetchNewsSources() {
   return response.json()
 }
 
+export async function fetchLatestGames() {
+  const response = await fetch(`${API_BASE}/stats/latest-game`)
+  if (!response.ok) throw new Error('Failed to fetch latest games')
+  return response.json()
+}
+
 export async function refreshStats() {
   const response = await fetch(`${API_BASE}/admin/refresh/stats`, { method: 'POST' })
   if (!response.ok) throw new Error('Failed to refresh stats')

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useProspects } from '../hooks/useProspects'
+import { useProspects, useLatestGames } from '../hooks/useProspects'
 import StatsTable from '../components/StatsTable'
 import NewsFeed from '../components/NewsFeed'
 
@@ -7,7 +7,8 @@ const TIME_PERIODS = [
   { key: 'season', label: 'Season' },
   { key: '28', label: 'Last 28 Days' },
   { key: '14', label: 'Last 14 Days' },
-  { key: '7', label: 'Last 7 Days' }
+  { key: '7', label: 'Last 7 Days' },
+  { key: 'latest', label: 'Latest Game' }
 ]
 
 export default function Dashboard() {
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const [timePeriod, setTimePeriod] = useState('season')
 
   const { data: prospects, isLoading, error } = useProspects(filters)
+  const { data: latestGames, isLoading: latestLoading } = useLatestGames()
 
   const positions = ['C', 'SS', 'OF', '2B', '3B', '1B', 'SP', 'RP', 'LHP', 'RHP']
   const levels = ['Triple-A', 'Double-A', 'High-A', 'Single-A', 'Rookie']
@@ -93,7 +95,7 @@ export default function Dashboard() {
               <p className="text-gray-500 text-center">No prospects found. Add prospects to get started.</p>
             </div>
           ) : (
-            <StatsTable prospects={prospects} onSort={handleSort} timePeriod={timePeriod} />
+            <StatsTable prospects={prospects} onSort={handleSort} timePeriod={timePeriod} latestGames={latestGames} />
           )}
         </div>
 
