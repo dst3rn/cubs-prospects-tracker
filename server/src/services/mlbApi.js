@@ -3,11 +3,18 @@ const axios = require('axios');
 const MLB_API_BASE = 'https://statsapi.mlb.com/api/v1';
 
 /**
- * Returns 'S' during spring training (Feb-Mar) and 'R' for regular season
+ * Returns 'S' during spring training (Feb through ~Mar 24) and 'R' for regular season.
+ * Regular season typically starts in late March.
  */
 function getCurrentGameType() {
-  const month = new Date().getMonth(); // 0-indexed: 1=Feb, 2=Mar
-  return (month === 1 || month === 2) ? 'S' : 'R';
+  const now = new Date();
+  const month = now.getMonth(); // 0-indexed
+  const day = now.getDate();
+  // Spring training: February (month 1) and early March (month 2, before the 25th)
+  if (month === 1 || (month === 2 && day < 25)) {
+    return 'S';
+  }
+  return 'R';
 }
 
 // Minor league level IDs
@@ -58,73 +65,56 @@ const mlbApi = {
   },
 
   /**
-   * Get season stats for a player (including minor leagues)
+   * Get season stats for a player (including minor leagues).
+   * Must query each sportId individually — the comma-separated sportIds param
+   * only returns MLB-level stats.
    */
   async getSeasonStats(playerId, season = new Date().getFullYear()) {
-    try {
-      const response = await axios.get(`${MLB_API_BASE}/people/${playerId}/stats`, {
-        params: {
-          stats: 'season',
-          group: 'hitting,pitching',
-          season: season,
-          gameType: getCurrentGameType(),
-          sportIds: '1,11,12,13,14,15,16,17,21,22,23' // All professional levels
+    const sportIds = [1, 11, 12, 13, 14, 15, 16, 17, 21, 22, 23];
+    const allStats = [];
+
+    for (const sportId of sportIds) {
+      try {
+        const response = await axios.get(`${MLB_API_BASE}/people/${playerId}/stats`, {
+          params: {
+            stats: 'season',
+            group: 'hitting,pitching',
+            season: season,
+            gameType: getCurrentGameType(),
+            sportId: sportId
+          }
+        });
+        if (response.data.stats) {
+          allStats.push(...response.data.stats);
         }
-      });
-      return response.data.stats || [];
-    } catch (err) {
-      console.error('Error fetching season stats:', err.message);
-      return [];
+      } catch (err) {
+        // Continue if a level has no stats
+      }
     }
+
+    return allStats;
   },
 
   /**
    * Get career stats for a player (including minor leagues)
    */
   async getCareerStats(playerId) {
-    try {
-      // Fetch from all professional levels
-      const response = await axios.get(`${MLB_API_BASE}/people/${playerId}/stats`, {
-        params: {
-          stats: 'career',
-          group: 'hitting,pitching',
-          gameType: getCurrentGameType(),
-          sportIds: '1,11,12,13,14,15,16,17,21,22,23' // All professional levels including minors
-        }
-      });
-      return response.data.stats || [];
-    } catch (err) {
-      console.error('Error fetching career stats:', err.message);
-      return [];
-    }
+    return this.getStatsAllLevels(playerId, 'career');
   },
 
   /**
    * Get year-by-year stats for a player (including minor leagues)
    */
   async getYearByYearStats(playerId) {
-    try {
-      const response = await axios.get(`${MLB_API_BASE}/people/${playerId}/stats`, {
-        params: {
-          stats: 'yearByYear',
-          group: 'hitting,pitching',
-          gameType: getCurrentGameType(),
-          sportIds: '1,11,12,13,14,15,16,17,21,22,23' // All professional levels
-        }
-      });
-      return response.data.stats || [];
-    } catch (err) {
-      console.error('Error fetching year-by-year stats:', err.message);
-      return [];
-    }
+    return this.getStatsAllLevels(playerId, 'yearByYear');
   },
 
   /**
    * Get stats from all levels (MLB + MiLB) for a specific stat type
    */
   async getStatsAllLevels(playerId, statType, season = null, extraParams = {}) {
-    // Sport IDs: 1=MLB, 11=AAA, 12=AA, 13=A+, 14=A, 16=Rookie, 17=Winter
-    const sportIds = [1, 11, 12, 13, 14, 16];
+    // Sport IDs: 1=MLB, 11=AAA, 12=AA, 13=A+, 14=A, 15=Short-A, 16=Rookie, 17=Winter, 21-23=Other pro
+    const sportIds = [1, 11, 12, 13, 14, 15, 16, 17, 21, 22, 23];
     const allStats = [];
 
     for (const sportId of sportIds) {
@@ -214,43 +204,17 @@ const mlbApi = {
    * Get game logs for a player (for rolling calculations, including minor leagues)
    */
   async getGameLog(playerId, season = new Date().getFullYear()) {
-    try {
-      const response = await axios.get(`${MLB_API_BASE}/people/${playerId}/stats`, {
-        params: {
-          stats: 'gameLog',
-          group: 'hitting,pitching',
-          season: season,
-          gameType: getCurrentGameType(),
-          sportIds: '1,11,12,13,14,15,16,17,21,22,23'
-        }
-      });
-      return response.data.stats || [];
-    } catch (err) {
-      console.error('Error fetching game log:', err.message);
-      return [];
-    }
+    return this.getStatsAllLevels(playerId, 'gameLog', season);
   },
 
   /**
    * Get stats for a specific date range (including minor leagues)
    */
   async getDateRangeStats(playerId, startDate, endDate) {
-    try {
-      const response = await axios.get(`${MLB_API_BASE}/people/${playerId}/stats`, {
-        params: {
-          stats: 'byDateRange',
-          group: 'hitting,pitching',
-          startDate: startDate,
-          endDate: endDate,
-          gameType: getCurrentGameType(),
-          sportIds: '1,11,12,13,14,15,16,17,21,22,23'
-        }
-      });
-      return response.data.stats || [];
-    } catch (err) {
-      console.error('Error fetching date range stats:', err.message);
-      return [];
-    }
+    return this.getStatsAllLevels(playerId, 'byDateRange', null, {
+      startDate: startDate,
+      endDate: endDate
+    });
   },
 
   /**
