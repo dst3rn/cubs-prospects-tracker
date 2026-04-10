@@ -4,11 +4,11 @@ import StatsTable from '../components/StatsTable'
 import NewsFeed from '../components/NewsFeed'
 
 const TIME_PERIODS = [
+  { key: 'latest', label: 'Latest Game' },
   { key: 'season', label: 'Season' },
   { key: '28', label: 'Last 28 Days' },
   { key: '14', label: 'Last 14 Days' },
-  { key: '7', label: 'Last 7 Days' },
-  { key: 'latest', label: 'Latest Game' }
+  { key: '7', label: 'Last 7 Days' }
 ]
 
 export default function Dashboard() {
@@ -16,7 +16,7 @@ export default function Dashboard() {
     position: '',
     level: ''
   })
-  const [timePeriod, setTimePeriod] = useState('season')
+  const [timePeriod, setTimePeriod] = useState('latest')
 
   const { data: prospects, isLoading, error } = useProspects(filters)
   const { data: latestGames, isLoading: latestLoading } = useLatestGames()
