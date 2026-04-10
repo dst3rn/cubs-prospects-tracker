@@ -42,6 +42,39 @@ function getStatsForPeriod(prospect, timePeriod) {
   }
 }
 
+function formatGameDate(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function MobileLatestGameRow({ prospect, game }) {
+  return (
+    <Link
+      to={`/prospect/${prospect.id}`}
+      className="flex items-center gap-3 bg-white p-3 rounded-lg shadow-sm active:bg-gray-50"
+    >
+      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-cubs-blue text-white text-xs font-bold flex-shrink-0">
+        {prospect.pipeline_rank}
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="font-medium text-gray-900 truncate">{prospect.name}</p>
+        </div>
+        <p className="text-xs text-gray-500">{prospect.position} • {prospect.current_team}</p>
+        {game ? (
+          <p className="text-sm font-mono text-gray-800 mt-1">
+            <span className="text-xs text-gray-400 mr-1">{formatGameDate(game.date)}</span>
+            {game.line}
+          </p>
+        ) : (
+          <p className="text-xs text-gray-400 mt-1">No recent game</p>
+        )}
+      </div>
+    </Link>
+  )
+}
+
 function MobileProspectRow({ prospect, isPitcher, formatStat, timePeriod }) {
   const stats = getStatsForPeriod(prospect, timePeriod)
 
@@ -97,7 +130,7 @@ function MobileProspectRow({ prospect, isPitcher, formatStat, timePeriod }) {
   )
 }
 
-export default function StatsTable({ prospects, onSort, timePeriod = 'season' }) {
+export default function StatsTable({ prospects, onSort, timePeriod = 'season', latestGames = {} }) {
   const [sortColumn, setSortColumn] = useState('pipeline_rank')
   const [sortDirection, setSortDirection] = useState('asc')
 
@@ -130,6 +163,133 @@ export default function StatsTable({ prospects, onSort, timePeriod = 'season' })
   // Separate hitters and pitchers
   const hitters = prospects.filter(p => !p.isPitcher)
   const pitchers = prospects.filter(p => p.isPitcher)
+
+  if (timePeriod === 'latest') {
+    return (
+      <div className="space-y-8">
+        {/* Hitters - Latest Game */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Position Players</h3>
+
+          {/* Mobile */}
+          <div className="md:hidden space-y-2">
+            {hitters.map((prospect) => (
+              <MobileLatestGameRow key={prospect.id} prospect={prospect} game={latestGames[prospect.mlb_player_id]} />
+            ))}
+            {hitters.length === 0 && (
+              <p className="text-center text-gray-500 py-8">No position players found</p>
+            )}
+          </div>
+
+          {/* Desktop */}
+          <div className="hidden md:block bg-white rounded-lg shadow overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <SortHeader column="pipeline_rank">Rank</SortHeader>
+                  <SortHeader column="name">Name</SortHeader>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pos</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Team</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Line</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {hitters.map((prospect) => {
+                  const game = latestGames[prospect.mlb_player_id]
+                  return (
+                    <tr key={prospect.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-cubs-blue text-white text-xs font-bold">
+                          {prospect.pipeline_rank}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <Link to={`/prospect/${prospect.id}`} className="text-cubs-blue hover:underline font-medium">
+                          {prospect.name}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{prospect.position}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{prospect.current_team}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{game ? formatGameDate(game.date) : '-'}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm font-mono">{game?.line || '-'}</td>
+                    </tr>
+                  )
+                })}
+                {hitters.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-3 py-8 text-center text-gray-500">No position players found</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Pitchers - Latest Game */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Pitchers</h3>
+          <p className="text-xs text-gray-400 mb-2 font-mono">Line: IP-R-ER-H-BB-K</p>
+
+          {/* Mobile */}
+          <div className="md:hidden space-y-2">
+            {pitchers.map((prospect) => (
+              <MobileLatestGameRow key={prospect.id} prospect={prospect} game={latestGames[prospect.mlb_player_id]} />
+            ))}
+            {pitchers.length === 0 && (
+              <p className="text-center text-gray-500 py-8">No pitchers found</p>
+            )}
+          </div>
+
+          {/* Desktop */}
+          <div className="hidden md:block bg-white rounded-lg shadow overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <SortHeader column="pipeline_rank">Rank</SortHeader>
+                  <SortHeader column="name">Name</SortHeader>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pos</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Team</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                    <span className="cursor-help border-b border-dashed border-gray-400" title="IP-R-ER-H-BB-K">Line</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {pitchers.map((prospect) => {
+                  const game = latestGames[prospect.mlb_player_id]
+                  return (
+                    <tr key={prospect.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-cubs-blue text-white text-xs font-bold">
+                          {prospect.pipeline_rank}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <Link to={`/prospect/${prospect.id}`} className="text-cubs-blue hover:underline font-medium">
+                          {prospect.name}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{prospect.position}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{prospect.current_team}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{game ? formatGameDate(game.date) : '-'}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm font-mono">{game?.line || '-'}</td>
+                    </tr>
+                  )
+                })}
+                {pitchers.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-3 py-8 text-center text-gray-500">No pitchers found</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">

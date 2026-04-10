@@ -2,6 +2,105 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const statsCalculator = require('../services/statsCalculator');
+const mlbApi = require('../services/mlbApi');
+
+/**
+ * Format a hitter's game log into shorthand like "2-4, HR, 2B, K, BB"
+ */
+function formatHitterLine(stat) {
+  const parts = [`${stat.hits || 0}-${stat.atBats || 0}`];
+
+  // Extra base hits
+  const hr = stat.homeRuns || 0;
+  const triples = stat.triples || 0;
+  const doubles = stat.doubles || 0;
+  if (hr > 0) parts.push(hr > 1 ? `${hr}HR` : 'HR');
+  if (triples > 0) parts.push(triples > 1 ? `${triples}3B` : '3B');
+  if (doubles > 0) parts.push(doubles > 1 ? `${doubles}2B` : '2B');
+
+  // RBIs (only if > 0)
+  if (stat.rbi > 0) parts.push(`${stat.rbi} RBI`);
+
+  // Strikeouts
+  const k = stat.strikeOuts || 0;
+  if (k > 0) parts.push(k > 1 ? `${k}K` : 'K');
+
+  // Walks
+  const bb = stat.baseOnBalls || 0;
+  if (bb > 0) parts.push(bb > 1 ? `${bb}BB` : 'BB');
+
+  // Stolen bases
+  const sb = stat.stolenBases || 0;
+  if (sb > 0) parts.push(sb > 1 ? `${sb}SB` : 'SB');
+
+  return parts.join(', ');
+}
+
+/**
+ * Format a pitcher's game log into shorthand like "5.0-1-1-3-2-1"
+ * Format: IP-R-ER-H-BB-K
+ */
+function formatPitcherLine(stat) {
+  const ip = stat.inningsPitched || '0.0';
+  const r = stat.runs || 0;
+  const er = stat.earnedRuns || 0;
+  const h = stat.hits || 0;
+  const bb = stat.baseOnBalls || 0;
+  const k = stat.strikeOuts || 0;
+  return `${ip}-${r}-${er}-${h}-${bb}-${k}`;
+}
+
+/**
+ * GET /api/stats/latest-game
+ * Get the most recent game stats for all active prospects
+ */
+router.get('/latest-game', async (req, res) => {
+  try {
+    const result = await db.query(
+      'SELECT mlb_player_id, name, position FROM prospects WHERE active = true'
+    );
+    const prospects = result.rows;
+    const latestGames = {};
+
+    await Promise.all(prospects.map(async (prospect) => {
+      const isPitcher = ['P', 'SP', 'RP', 'LHP', 'RHP'].includes(prospect.position);
+      const group = isPitcher ? 'pitching' : 'hitting';
+
+      try {
+        const gameLog = await mlbApi.getGameLog(prospect.mlb_player_id);
+
+        // Find the most recent game from any level
+        let mostRecent = null;
+        for (const statGroup of gameLog) {
+          if (statGroup.group?.displayName !== group) continue;
+          for (const split of (statGroup.splits || [])) {
+            if (!mostRecent || split.date > mostRecent.date) {
+              mostRecent = split;
+            }
+          }
+        }
+
+        if (mostRecent) {
+          const stat = mostRecent.stat;
+          latestGames[prospect.mlb_player_id] = {
+            date: mostRecent.date,
+            opponent: mostRecent.opponent?.name || null,
+            isHome: mostRecent.isHome,
+            line: isPitcher ? formatPitcherLine(stat) : formatHitterLine(stat),
+            isPitcher
+          };
+        }
+      } catch (err) {
+        // Skip players with no game log
+      }
+    }));
+
+    res.json(latestGames);
+  } catch (err) {
+    console.error('Error fetching latest games:', err);
+    res.status(500).json({ error: 'Failed to fetch latest games' });
+  }
+});
 
 /**
  * GET /api/stats/:playerId
