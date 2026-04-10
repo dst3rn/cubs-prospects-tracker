@@ -1,9 +1,14 @@
 const db = require('../db');
 
-// Returns 'S' during spring training (Feb-Mar) and 'R' for regular season
+// Returns 'S' during spring training (Feb through ~Mar 24) and 'R' for regular season
 function getCurrentGameType() {
-  const month = new Date().getMonth(); // 0-indexed: 1=Feb, 2=Mar
-  return (month === 1 || month === 2) ? 'S' : 'R';
+  const now = new Date();
+  const month = now.getMonth(); // 0-indexed
+  const day = now.getDate();
+  if (month === 1 || (month === 2 && day < 25)) {
+    return 'S';
+  }
+  return 'R';
 }
 
 const statsCalculator = {

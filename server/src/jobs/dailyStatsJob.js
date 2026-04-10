@@ -3,8 +3,14 @@ const mlbApi = require('../services/mlbApi');
 const statsCalculator = require('../services/statsCalculator');
 
 function getCurrentGameType() {
-  const month = new Date().getMonth(); // 0-indexed: 1=Feb, 2=Mar
-  return (month === 1 || month === 2) ? 'S' : 'R';
+  const now = new Date();
+  const month = now.getMonth(); // 0-indexed
+  const day = now.getDate();
+  // Spring training: February and early March (before the 25th)
+  if (month === 1 || (month === 2 && day < 25)) {
+    return 'S';
+  }
+  return 'R';
 }
 
 /**
@@ -36,28 +42,74 @@ async function runDailyStatsJob() {
         const statsResponse = await mlbApi.getSeasonStats(prospect.mlb_player_id);
 
         if (statsResponse && statsResponse.length > 0) {
-          // Process each stat group (hitting and/or pitching)
+          // Aggregate stats across all levels per group (hitting/pitching).
+          // getSeasonStats now queries each sportId individually, so there may be
+          // multiple stat groups of the same type (one per level).
+          const aggregated = { hitting: null, pitching: null };
+
           for (const statGroup of statsResponse) {
-            if (statGroup.splits && statGroup.splits.length > 0) {
-              const latestStats = statGroup.splits[0].stat;
+            const groupName = statGroup.group?.displayName;
+            if (groupName !== 'hitting' && groupName !== 'pitching') continue;
 
-              let parsedStats;
-              if (statGroup.group.displayName === 'hitting') {
-                parsedStats = mlbApi.parseBattingStats(latestStats);
-              } else if (statGroup.group.displayName === 'pitching') {
-                parsedStats = mlbApi.parsePitchingStats(latestStats);
-              }
+            for (const split of (statGroup.splits || [])) {
+              const parsed = groupName === 'hitting'
+                ? mlbApi.parseBattingStats(split.stat)
+                : mlbApi.parsePitchingStats(split.stat);
 
-              if (parsedStats) {
-                // Store as today's cumulative stats with current game type
-                await statsCalculator.storeDailyStats(
-                  prospect.mlb_player_id,
-                  parsedStats,
-                  new Date(),
-                  gameType
-                );
+              if (!parsed) continue;
+
+              if (!aggregated[groupName]) {
+                aggregated[groupName] = { ...parsed };
+              } else {
+                // Sum counting stats across levels
+                const agg = aggregated[groupName];
+                agg.games = (agg.games || 0) + (parsed.games || 0);
+                if (groupName === 'hitting') {
+                  agg.atBats = (agg.atBats || 0) + (parsed.atBats || 0);
+                  agg.hits = (agg.hits || 0) + (parsed.hits || 0);
+                  agg.doubles = (agg.doubles || 0) + (parsed.doubles || 0);
+                  agg.triples = (agg.triples || 0) + (parsed.triples || 0);
+                  agg.homeRuns = (agg.homeRuns || 0) + (parsed.homeRuns || 0);
+                  agg.rbis = (agg.rbis || 0) + (parsed.rbis || 0);
+                  agg.walks = (agg.walks || 0) + (parsed.walks || 0);
+                  agg.strikeouts = (agg.strikeouts || 0) + (parsed.strikeouts || 0);
+                  agg.stolenBases = (agg.stolenBases || 0) + (parsed.stolenBases || 0);
+                  // Recalculate rate stats
+                  agg.avg = agg.atBats > 0 ? Math.round((agg.hits / agg.atBats) * 1000) / 1000 : 0;
+                  const pa = agg.atBats + agg.walks;
+                  agg.obp = pa > 0 ? Math.round(((agg.hits + agg.walks) / pa) * 1000) / 1000 : 0;
+                  const tb = agg.hits + agg.doubles + (2 * agg.triples) + (3 * agg.homeRuns);
+                  agg.slg = agg.atBats > 0 ? Math.round((tb / agg.atBats) * 1000) / 1000 : 0;
+                  agg.ops = Math.round((agg.obp + agg.slg) * 1000) / 1000;
+                } else {
+                  agg.inningsPitched = (agg.inningsPitched || 0) + (parsed.inningsPitched || 0);
+                  agg.earnedRuns = (agg.earnedRuns || 0) + (parsed.earnedRuns || 0);
+                  agg.hitsAllowed = (agg.hitsAllowed || 0) + (parsed.hitsAllowed || 0);
+                  agg.walksAllowed = (agg.walksAllowed || 0) + (parsed.walksAllowed || 0);
+                  agg.strikeoutsPitching = (agg.strikeoutsPitching || 0) + (parsed.strikeoutsPitching || 0);
+                  agg.wins = (agg.wins || 0) + (parsed.wins || 0);
+                  agg.losses = (agg.losses || 0) + (parsed.losses || 0);
+                  agg.saves = (agg.saves || 0) + (parsed.saves || 0);
+                  // Recalculate rate stats
+                  agg.era = agg.inningsPitched > 0 ? Math.round((agg.earnedRuns * 9 / agg.inningsPitched) * 100) / 100 : 0;
+                  agg.whip = agg.inningsPitched > 0 ? Math.round(((agg.walksAllowed + agg.hitsAllowed) / agg.inningsPitched) * 100) / 100 : 0;
+                }
               }
             }
+          }
+
+          // Store the aggregated stats (prefer hitting for position players, pitching for pitchers)
+          const statsToStore = isPitcher
+            ? (aggregated.pitching || aggregated.hitting)
+            : (aggregated.hitting || aggregated.pitching);
+
+          if (statsToStore) {
+            await statsCalculator.storeDailyStats(
+              prospect.mlb_player_id,
+              statsToStore,
+              new Date(),
+              gameType
+            );
           }
 
           successCount++;
