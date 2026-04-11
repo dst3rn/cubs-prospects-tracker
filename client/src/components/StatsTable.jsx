@@ -48,7 +48,7 @@ function formatGameDate(dateStr) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-function MobileLatestGameRow({ prospect, game }) {
+function MobileLatestGameRow({ prospect, game, seasonStat }) {
   return (
     <Link
       to={`/prospect/${prospect.id}`}
@@ -71,6 +71,14 @@ function MobileLatestGameRow({ prospect, game }) {
           <p className="text-xs text-gray-400 mt-1">No recent game</p>
         )}
       </div>
+      {seasonStat !== null && seasonStat !== undefined && (
+        <div className="text-right flex-shrink-0">
+          <p className="text-[10px] text-gray-400 uppercase">{prospect.isPitcher ? 'ERA' : 'OPS'}</p>
+          <p className="text-sm font-semibold font-mono">
+            {typeof seasonStat === 'number' ? seasonStat.toFixed(prospect.isPitcher ? 2 : 3) : '-'}
+          </p>
+        </div>
+      )}
     </Link>
   )
 }
@@ -174,7 +182,7 @@ export default function StatsTable({ prospects, onSort, timePeriod = 'season', l
           {/* Mobile */}
           <div className="md:hidden space-y-2">
             {hitters.map((prospect) => (
-              <MobileLatestGameRow key={prospect.id} prospect={prospect} game={latestGames[prospect.mlb_player_id]} />
+              <MobileLatestGameRow key={prospect.id} prospect={prospect} game={latestGames[prospect.mlb_player_id]} seasonStat={prospect.seasonStats?.ops} />
             ))}
             {hitters.length === 0 && (
               <p className="text-center text-gray-500 py-8">No position players found</p>
@@ -190,6 +198,7 @@ export default function StatsTable({ prospects, onSort, timePeriod = 'season', l
                   <SortHeader column="name">Name</SortHeader>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pos</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Team</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">OPS</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Line</th>
                 </tr>
@@ -211,6 +220,7 @@ export default function StatsTable({ prospects, onSort, timePeriod = 'season', l
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{prospect.position}</td>
                       <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{prospect.current_team}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm font-mono font-semibold">{formatStat(prospect.seasonStats?.ops)}</td>
                       <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{game ? formatGameDate(game.date) : '-'}</td>
                       <td className="px-3 py-2 whitespace-nowrap text-sm font-mono">{game?.line || '-'}</td>
                     </tr>
@@ -218,7 +228,7 @@ export default function StatsTable({ prospects, onSort, timePeriod = 'season', l
                 })}
                 {hitters.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-3 py-8 text-center text-gray-500">No position players found</td>
+                    <td colSpan={7} className="px-3 py-8 text-center text-gray-500">No position players found</td>
                   </tr>
                 )}
               </tbody>
@@ -234,7 +244,7 @@ export default function StatsTable({ prospects, onSort, timePeriod = 'season', l
           {/* Mobile */}
           <div className="md:hidden space-y-2">
             {pitchers.map((prospect) => (
-              <MobileLatestGameRow key={prospect.id} prospect={prospect} game={latestGames[prospect.mlb_player_id]} />
+              <MobileLatestGameRow key={prospect.id} prospect={prospect} game={latestGames[prospect.mlb_player_id]} seasonStat={prospect.seasonStats?.era} />
             ))}
             {pitchers.length === 0 && (
               <p className="text-center text-gray-500 py-8">No pitchers found</p>
@@ -250,6 +260,7 @@ export default function StatsTable({ prospects, onSort, timePeriod = 'season', l
                   <SortHeader column="name">Name</SortHeader>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pos</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Team</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">ERA</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                     <span className="cursor-help border-b border-dashed border-gray-400" title="IP-R-ER-H-BB-K">Line</span>
@@ -273,6 +284,7 @@ export default function StatsTable({ prospects, onSort, timePeriod = 'season', l
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{prospect.position}</td>
                       <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{prospect.current_team}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-sm font-mono font-semibold">{formatStat(prospect.seasonStats?.era, 2)}</td>
                       <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{game ? formatGameDate(game.date) : '-'}</td>
                       <td className="px-3 py-2 whitespace-nowrap text-sm font-mono">{game?.line || '-'}</td>
                     </tr>
@@ -280,7 +292,7 @@ export default function StatsTable({ prospects, onSort, timePeriod = 'season', l
                 })}
                 {pitchers.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-3 py-8 text-center text-gray-500">No pitchers found</td>
+                    <td colSpan={7} className="px-3 py-8 text-center text-gray-500">No pitchers found</td>
                   </tr>
                 )}
               </tbody>
